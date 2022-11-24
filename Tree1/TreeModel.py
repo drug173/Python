@@ -15,7 +15,7 @@ class TreeModel(QAbstractItemModel):
         """ корневой узел"""
         self.setDataModel(self.rootItem)
 
-
+#------------
 
     def __del__(self):
         pass
