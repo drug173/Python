@@ -16,9 +16,6 @@ import time
 from tkinter import ttk
 import asyncio
 
-
-
-
 def exit_app():
     if root:
         root.destroy()
@@ -30,7 +27,7 @@ def main():
     root.iconbitmap("ico1.ico")
     root.configure(background="lightgray")
     # root.state('zoomed')
-    root.geometry("800x600")
+    root.geometry("1000x800")
 
     root.protocol("WM_DELETE_WINDOW", exit_app)
     views.flag = True
