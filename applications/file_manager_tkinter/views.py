@@ -20,12 +20,31 @@ import subprocess
 from tkinter import messagebox
 from tkinter import simpledialog
 from tkinter import filedialog
-
+import win32api
+import win32con
+import win32gui
+import sys
+import ctypes
+from ctypes import wintypes
+from PIL import Image, ImageTk, ImageGrab
+import win32com.client
+import matplotlib.pyplot as plt
+from tkinterdnd2 import DND_FILES, TkinterDnD
 from file_actions import ContextMenu
 import file_actions
 
 file_manager2 = None
 file_manager3 = None
+
+
+class ICONINFO(ctypes.Structure):
+    _fields_ = [
+        ("fIcon", ctypes.c_bool),
+        ("xHotspot", wintypes.DWORD),
+        ("yHotspot", wintypes.DWORD),
+        ("hbmMask", wintypes.HBITMAP),
+        ("hbmColor", wintypes.HBITMAP),
+    ]
 
 
 class FileManager():
@@ -53,8 +72,14 @@ class FileManager():
         self.parent_dir = self.get_drives()[0]
         self.icon_set()
         self.label_text = self.current_path
-        self.path_label = tk.Label(self.frame, text=self.label_text)
-        self.path_label.pack()
+
+        self.path_text = tkinter.StringVar()
+        self.path_text.set(self.label_text)
+        self.path_label = tkinter.Entry(self.frame, textvariable=self.path_text, width=40, state='readonly')
+        self.path_label.pack(fill=tk.BOTH)
+
+
+
         self.canvas.pack(fill=tk.BOTH, expand=True)
         self.treeview = self.create_tree(self.canvas)
         self.treeview.pack(fill=tk.BOTH, expand=True)
@@ -66,10 +91,10 @@ class FileManager():
     # Привязываем обработчики к событиям мыши
     def binding(self):
         self.context_menu1()
-        self.treeview.bind("<Button-1>", self.on_treeview_click)
-        self.treeview.bind("<B1-Motion>", self.on_treeview_drag)
-        self.treeview.bind("<ButtonRelease-1>", self.on_treeview_release)
-        # self.treeview.bind('<<TreeviewSelect>>', self.on_treeview_select)
+        #self.treeview.bind("<Button-1>", self.on_treeview_click)
+        #self.treeview.bind("<B1-Motion>", self.on_treeview_drag)
+        #self.treeview.bind("<ButtonRelease-1>", self.on_treeview_release)
+        self.treeview.bind('<<TreeviewSelect>>', self.on_treeview_select)
         self.treeview.bind('<Double-Button-1>', self.on_double_click)
 
     # Вызов контекстного меню
@@ -78,6 +103,18 @@ class FileManager():
         self.canvas.bind("<Button-3>", self.show_context_menu)
 
     '''Выделение элементов'''
+
+    def on_treeview_select(self, event):
+        if event.state == 0x4:  # 0x4 соответствует зажатой кнопке Ctrl
+            selected_item = self.treeview.selection()[0]
+            if selected_item in self.selected_items:
+                self.treeview.selection_remove(selected_item)
+                self.selected_items.remove(selected_item)
+            else:
+                self.treeview.selection_add(selected_item)
+                self.selected_items.append(selected_item)
+        else:
+            self.selected_items = self.treeview.selection()
 
     # Обработчик начала выделения
     def on_treeview_click(self, event):
@@ -103,12 +140,8 @@ class FileManager():
             file_name = self.treeview.item(item, "text")
             type1 = self.treeview.set(item, "Type")
             if type1 != "Папка":
-                print(type1)
                 file_name = file_name + type1
             self.selected_file_folders_names.append(file_name)
-
-        if self.selected_file_folders_names:
-            print("Selected file names2", self.selected_file_folders_names)
 
     # Обновление состояния выделения
     def update_selection(self):
@@ -124,7 +157,14 @@ class FileManager():
     def on_treeview_select(self, event):
         # Получаем список выделенных элементов
         self.selected_items = self.treeview.selection()
-        print("контекст", self.selected_items)
+
+
+    def on_treeview_press(self, event):
+        self.start_item = self.treeview.identify_row(event.y)
+        # Добавьте код для подготовки элемента к перетаскиванию
+
+
+
 
     '''КОНТЕКСТНОЕ МЕНЮ'''
 
@@ -132,21 +172,15 @@ class FileManager():
     def show_context_menu(self, event):
         try:  # получаем координаты клика правой кнопкой
             item = self.treeview.identify("item", event.x, event.y)
-            print(item)
-            print("клик по..")
         except:
-            print("клик мимо.")
             item = None
         self.on_treeview_select(event)
         if item:  # Если клик правой кнопкой по элементу
             self.on_treeview_select(event)
             action_field = self.treeview
-            print("1", self.selected_items)
             if item not in self.selected_items:  # Если клик правой кнопкой не по выделенному элементу
                 self.treeview.selection_set(item)  # Выделяем элемент по которому был клик правой кнопкой
-                print("2", item)
                 self.selected_items = (item,)
-                print("3", self.selected_items)
         else:
             self.selected_items = ()
             action_field = self.canvas
@@ -154,13 +188,10 @@ class FileManager():
         if action_field == self.treeview:
             x, y, _, _ = self.treeview.bbox(item)
             self.context_menu.coordinate_set(x + 36, y + 10)
-        print("action_field", action_field)
-        print("type", type(action_field))
         # self - передаём в функцию фрейм
         # action_field - по чему был клик (дерево или окно: treeview или canvas)
         # self.current_path - текущая папка
         # self.selected_items - кортеж выбранных файлов и папок
-        print("self.current_path", self.current_path)
         self.context_menu.post(event.x_root, event.y_root)
 
     '''Очистка дерева перед обновлением'''
@@ -168,7 +199,7 @@ class FileManager():
     def clear_tree(self, tree):
         tree.delete(*tree.get_children())
 
-    '''ПОЛУЧЕНИЕ ИКОНОК'''
+    '''ЗАГРУЗКА ИКОНОК'''
 
     # ИКОНКИ ДЛЯ ПАПОК И ФАЙЛОВ
     def icon_set(self):
@@ -198,11 +229,112 @@ class FileManager():
         icon = ImageTk.PhotoImage(icon_image)
         return icon
 
+    '''ПОЛУЧЕНИЕ ИКОНОК'''
+
+    #  Получение иконки системной, если нет то по умолчанию
+    def get_icon_defolt(self, items_path):
+        icon_path, icon_index = self.get_custom_folder_icon(items_path)  # проверяем есть ли системные иконки у папки
+        # print("items_path ", items_path, icon_path)
+        if not icon_path:  # Если системной иконки нет
+            item_name = os.path.basename(items_path)
+            file_extension = os.path.splitext(item_name)[1]
+
+            if os.path.isfile(items_path):  # Если файл
+                if file_extension in self.file_icons:
+                    icon_path1 = self.file_icons[file_extension]
+                else:
+                    icon_path1 = self.default_file_icon
+            else:  # если папка
+                icon_path1 = self.folder_icon
+        else:
+            icon_path1 = self.path_index_to_icon(icon_path, icon_index)
+            if not icon_path1:                    # НЕ ДОДЕЛАНО!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                icon_path1 = self.folder_icon
+        return icon_path1
+
+    #  Получение системной иконки папки (если есть)
+    def get_custom_folder_icon(self, folder_path):
+        desktop_ini_path = os.path.join(folder_path, 'desktop.ini')  # Получаем путь к файлу desktop.ini если есть файл
+        icon_path = None
+        icon_index = None
+        if os.path.exists(desktop_ini_path):  # если есть файл desktop.ini
+            with open(desktop_ini_path, 'r') as ini_file:  # ОТКРЫВАЕМ файл
+                icon_path, icon_index = self.desktop_file_to_icon(
+                    ini_file)  # Ищем в файле информацию об иконке для текущей папки в desktop.ini
+        return icon_path, icon_index
+
+    #  Получение данных об иконки текущей папки из desktop.ini
+    def desktop_file_to_icon(self, ini_file):
+        lines = ini_file.readlines()
+        for line in lines:  # Проходим по файлу, ищем путь к файлу иконки и индекс
+            if line.startswith('IconResource='):
+
+                n, path_index = line.split('=')
+                icon_path_index = path_index.strip()
+                icon_path = icon_path_index.strip().split(',')[0]
+                icon_index = int(icon_path_index.strip().split(',')[1])
+                return icon_path, icon_index  # # Если найден путь прекращаем
+        return None, None
+
+    # Получение из пути к файлу  и индекса изображение иконки для текущей папки
+    def path_index_to_icon(self, icon_path, icon_index):
+        """
+
+        Нужно доработать
+
+        """
+        if icon_path and icon_index is not None:  # Если путь есть
+            path = None
+            try:
+
+                # self.desriptor_to_icon(folder_path)
+
+
+                hicon = win32gui.ExtractIcon(win32api.GetModuleHandle(None), icon_path, icon_index)
+
+
+                icon_info = win32gui.GetIconInfo(hicon)
+
+
+                width = icon_info[1]
+                height = icon_info[2]
+                #print("width height ", width, height)
+
+                #bmp_data = bytearray(icon_info[4].bmBits)[:width * height * 4]
+                #bmp_image = Image.frombuffer("RGBA", (width, height), bmp_data, "raw", "BGRA", 0, 1)
+
+                #print("image 45 ")
+                return path
+            except Exception as e:
+                #print("Error loading icon:", e)
+                return path
+
+    """Извлечение метаданных файла"""
+
+    def get_file_metadata(self, file_path):
+        try:
+            shell = win32com.client.Dispatch("Shell.Application")
+            folder = shell.Namespace(os.path.dirname(file_path))
+            file_item = folder.ParseName(os.path.basename(file_path))
+
+            metadata = {}
+            for i in range(266):
+                prop_name = folder.GetDetailsOf(None, i)
+                prop_value = folder.GetDetailsOf(file_item, i)
+                if prop_value:
+                    metadata[prop_name] = prop_value
+
+            return metadata
+        except Exception as e:
+            print("Error:", e)
+            return None
+
     '''СОЗДАНИЕ ДЕРЕВА'''
+
     # Дерево
-    def create_tree(self, canvas):
+    def create_tree(self, parent1):
         # Создание дерева
-        self.treeview = ttk.Treeview(canvas, columns=("Type", "Size"))
+        self.treeview = ttk.Treeview(parent1, columns=("Type", "Size"))
         self.treeview.heading("#0", text="Имя файла/папки", anchor='w')
         self.treeview.heading("Size", text="Размер")
         self.treeview.heading("Type", text="Тип")
@@ -238,22 +370,23 @@ class FileManager():
         try:
             files, folders = self.get_files_and_folders(self.current_path)
             for folder in folders:
-                self.treeview.insert('', 'end', text=folder, image=self.folder_icon, values=("Папка", ""))
+                folder_name = os.path.basename(folder)
+                file_name_ful = os.path.join(self.current_path, folder_name)
+                icon = self.get_icon_defolt(file_name_ful)
+
+                self.treeview.insert('', 'end', text=folder, image=icon, values=("Папка", ""))
             for file in files:
                 file_name = os.path.basename(file)
                 file_extension = os.path.splitext(file_name)[1]
                 file_name1 = os.path.splitext(file_name)[0]
                 file_name_ful = os.path.join(self.current_path, file_name)
                 file_size = self.get_size(file_name_ful)
-                if file_extension in self.file_icons:
-                    icon = self.file_icons[file_extension]
-                else:
-                    icon = self.default_file_icon
+
+                icon = self.get_icon_defolt(file_name_ful)
+
                 self.treeview.insert('', 'end', text=file_name1, image=icon, values=(file_extension, file_size))
         except PermissionError:
             self.treeview.insert('', 'end', text="  СКРЫТАЯ ПАПКА", image=self.left_icon, values=("Папка",))
-            # Обработка ошибки доступа к директории
-            # Например, можно вывести сообщение об ошибке или предпринять другие действия
 
     # Обновление файловой системы
     def update_file_system(self):
@@ -263,25 +396,31 @@ class FileManager():
                 files, folders = self.get_files_and_folders(self.current_path)
                 parent_path = os.path.abspath(os.path.join(self.current_path, os.pardir))
                 if not os.path.ismount(self.current_path):
-                    self.treeview.insert('', 'end', text="..", image=self.left_icon, values=("Папка", parent_path))
+                    self.treeview.insert('', 'end', text="..", image=self.left_icon, values=("",))
                 for folder in folders:
                     folder_name = os.path.basename(folder)
-                    self.treeview.insert('', 'end', text=folder_name, image=self.folder_icon, values=("Папка", ""))
+                    file_name_ful = os.path.join(self.current_path, folder_name)
+                    icon = self.get_icon_defolt(file_name_ful)
+                    self.treeview.insert('', 'end', text=folder, image=icon, values=("Папка", ""))
                 for file in files:
                     file_name = os.path.basename(file)
                     file_extension = os.path.splitext(file_name)[1]
                     file_name1 = os.path.splitext(file_name)[0]
                     file_name_ful = os.path.join(self.current_path, file_name)
                     file_size = self.get_size(file_name_ful)
-                    if file_extension in self.file_icons:
-                        icon = self.file_icons[file_extension]
-                    else:
-                        icon = self.default_file_icon
+                    icon = self.get_icon_defolt(file_name_ful)
+
                     self.treeview.insert('', 'end', text=file_name1, image=icon, values=(file_extension, file_size))
             except PermissionError:
+                self.path_text.set("(скрытая папка)   " + self.current_path)
                 self.treeview.insert('', 'end', text="  СКРЫТАЯ ПАПКА", image=self.left_icon, values=("Папка",))
 
+
+    def update_dir(self):
+        self.update_file_system()
+
     '''Метод для получения размера файла в удобочитаемом формате'''
+
     def get_size(self, file_path):
         size = os.path.getsize(file_path)
         for unit in ['Б', 'КБ', 'МБ', 'ГБ']:
@@ -291,6 +430,7 @@ class FileManager():
         return "%3.1f %s" % (size, unit)
 
     '''Двойной клик'''
+
     def on_double_click(self, event):
         selected_items = self.treeview.selection()
         if selected_items:
@@ -301,14 +441,16 @@ class FileManager():
             if item_text == "  СКРЫТАЯ ПАПКА":
                 parent_dir = os.path.abspath(os.path.join(self.current_path, os.pardir))
                 self.current_path = parent_dir
-                self.path_label.config(text=self.current_path)
+                #self.path_label.config(text=self.current_path)
+                self.path_text.set(self.current_path)
             if item_text == "..":  # Проверяем, выбран ли элемент с двумя точками
                 # Переходим на уровень выше
 
                 self.parent_dir = os.path.abspath(os.path.join(self.current_path, os.pardir))
                 if os.path.exists(self.parent_dir):  # Проверяем, существует ли родительский каталог
                     self.current_path = self.parent_dir
-                    self.path_label.config(text=self.current_path)
+                    #self.path_label.config(text=self.current_path)
+                    self.path_text.set(self.current_path)
             else:
                 # Получаем полный путь элемента, добавляя его к текущему пути
                 item_path = os.path.join(self.current_path, item_text)
@@ -318,7 +460,8 @@ class FileManager():
                     self.current_path = item_path
 
                     # Обновляем метку с текущим путем
-                    self.path_label.config(text=self.current_path + "\\")
+                    #self.path_label.config(text=self.current_path + "\\")
+                    self.path_text.set(self.current_path + "\\")
             # Обновляем содержимое списка файлов и папок
             self.update_file_system()
 
@@ -343,7 +486,8 @@ class FileManagerList_2(FileManager):
     def change_drive(self, drive):
         self.drive_letter = drive[0]
         self.current_path = drive
-        self.path_label.config(text=self.current_path)
+        #self.path_label.config(text=self.current_path)
+        self.path_text.set(self.current_path)
         self.update_file_system()
 
 
@@ -369,30 +513,88 @@ class FileManagerList(FileManager):
     def change_drive(self, drive):
         self.drive_letter = drive[0]
         self.current_path = drive
-        self.path_label.config(text=self.current_path)
+        #self.path_label.config(text=self.current_path)
+        self.path_text.set(self.current_path)
         self.update_file_system()
 
+
 '''Обновление файловой системы в двух фреймах'''
+
+
 def update_ful():
     global file_manager2
     global file_manager3
     file_manager2.update_file_system()
     file_manager3.update_file_system()
 
+
 '''Создание фреймов и списков файловых систем'''
-def applications(root):
-    # initial_path = psutil.disk_partitions()[0][0]
 
-    # frame1 = tk.Frame(root, bg="#A9A9A9")
-    # frame1.pack(side=tk.LEFT, padx=4, pady=4, fill=tk.BOTH, expand=False)
-    global file_manager2
-    global file_manager3
 
-    frame2 = tk.Frame(root, bg="lightgray")
-    frame2.pack(side=tk.LEFT, padx=4, pady=4, fill=tk.BOTH, expand=True)
+class Applications:
+    def __init__(self, root, event=None):
+        self.label = None  # Атрибут для хранения ссылки на виджет Label
+        self.resized = False
+        menu_bar = tk.Menu(root)
+        self.root = root
+        self.len_1 = self.root.winfo_width()
+        root.config(menu=menu_bar)
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="МЕНЮ", menu=file_menu)
 
-    frame3 = tk.Frame(root, bg="#A9A9A9")
-    frame3.pack(side=tk.LEFT, padx=4, pady=4, fill=tk.BOTH, expand=True)
+        file_menu.add_command(label="Выход", command=root.quit)
+        file_menu.add_separator()
+        self.check_var = tk.BooleanVar()
+        file_menu.add_checkbutton(label="Отображать скрытые объекты", variable=self.check_var)
 
-    file_manager2 = FileManagerList_2(frame2)
-    file_manager3 = FileManagerList(frame3)
+
+
+        notebook = ttk.Notebook(root)
+        notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.tab1 = tk.Frame(notebook)
+        self.tab2 = tk.Frame(notebook)
+        self.tab3 = tk.Frame(notebook)
+        notebook.add(self.tab1, text="Проводник")
+        notebook.add(self.tab2, text="Tab 2")
+        notebook.add(self.tab3, text="О программе")
+        global file_manager2
+        global file_manager3
+
+        frame2 = tk.Frame(self.tab1, bg="lightgray")
+        frame2.pack(side=tk.LEFT, padx=4, pady=4, fill=tk.BOTH, expand=True)
+
+        frame3 = tk.Frame(self.tab1, bg="#A9A9A9")
+        frame3.pack(side=tk.LEFT, padx=4, pady=4, fill=tk.BOTH, expand=True)
+
+        file_manager2 = FileManagerList_2(frame2)
+        file_manager3 = FileManagerList(frame3)
+        root.bind("<Configure>", self.event_resize)
+        self.set_text(self.len_1)
+    def event_resize(self, event):
+        if not self.resized:  # Проверяем, было ли уже изменение размера
+            self.len_1 = self.root.winfo_width()
+            self.label.configure(wraplength=self.len_1)
+            self.label3.configure(wraplength=self.len_1)
+            self.label4.configure(wraplength=self.len_1)
+            #self.resized = True  # Устанавливаем флаг после вызова set_text
+
+    """Текст для вкладки"""
+    def set_text(self, len_1):
+        current_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
+        path_folder = os.path.join(current_directory, "icons", "2.png")
+        logo = tk.PhotoImage(file=path_folder)
+
+        self.label = ttk.Label(self.tab3, image=logo, text="Файловый менеджер", font=("Arial", 16), compound="left", anchor='w', wraplength=len_1-80)
+        self.label3= ttk.Label(self.tab3, text="Менеджер позволяет: копировать, удалять, переносить файлы.", font=("Arial", 12), anchor='w', wraplength=len_1-120)
+        self.label4 = ttk.Label(self.tab3, text="Множественное выделение: Shift либо Ctrl+клик мышкой ", font=("Arial", 12), anchor='w', wraplength=len_1-120)
+
+        self.label1 = ttk.Label(self.tab3, text="Разработка: Лейман М.А.", font=("Arial", 14))
+        self.label2 = ttk.Label(self.tab3, text="email: leiman@sfedu.ru.", font=("Arial", 14))
+
+        self.label.pack(fill=tk.X, padx=40)
+        self.label3.pack(fill=tk.X, padx=20)
+        self.label4.pack(fill=tk.X, padx=20)
+
+        self.label2.pack(side=tk.BOTTOM)
+        self.label1.pack(side=tk.BOTTOM)
+        self.label.image = logo  # Сохраняем ссылку на объект PhotoImage

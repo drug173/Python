@@ -6,7 +6,7 @@ Created on Thu Jul  6 11:15:42 2023
 """
 import views
 from views import FileManagerList, FileManagerList_2
-from views import applications
+from views import Applications
 import tkinter as tk
 from PIL import Image, ImageTk
 import os
@@ -28,10 +28,13 @@ def main():
     root.configure(background="lightgray")
     # root.state('zoomed')
     root.geometry("1000x800")
-
+    root.update()
+    len_1 = root.winfo_width()
+    print(len_1, "len")
     root.protocol("WM_DELETE_WINDOW", exit_app)
-    views.flag = True
-    applications(root)
+    #views.flag = True
+    applications = Applications(root)
+    applications.check_var.set(True)  # Скрываем скрытые файлы и папки
     root.mainloop()
 
 
