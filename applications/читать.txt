@@ -1,3 +1,7 @@
 Tree1- представление таблицы из базы данных в виде дерева (PyQt тестовое)
+
 monitor_CPU_RAM_GPU - монитор ресурсов компьютера (CPU, RAM, GPU) tkinter, psutil
+
 file_manager_tkinter -  Файловый менеджер tkinter
+
+SQLite_test   - Тестовое задание работа с базой данных, Pandas
