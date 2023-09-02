@@ -40,7 +40,8 @@ def cheaters_with_ban_before(conn, previous_day):
         Из таблицы  cheaters  базы данных получает список.
 
            Args:
-               date (datetime): Дата, для которой нужно обработать данные.
+               conn: соединение с базой данных
+			   previous_day (datetime): дата до которого ищем
     """
     cursor = conn.cursor()
     cursor.execute('''
