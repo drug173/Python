@@ -2,7 +2,7 @@
 
 
 <div align="center">
-  <img src="https://github.com/drug173/drug173/blob/main/image/neiron.jpg" width="600" height="300"/>
+  <img src="https://github.com/drug173/drug173/blob/main/image/neiron1.jpg" width="600" height="300"/>
 </div>
 
 #### Neural_Networks  - НС, тест, обучение.
