@@ -1,6 +1,7 @@
-###### Модель нейронной сети ___Pytorch___ (___LSTM___) классификация отзывов к фильмам (положительный, отрицательный), присвоение рейтинга отзыву.  
+###### Тест GreenAtom
 
-##### Датасет  https://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz  
+##### 
 
-![image](https://github.com/drug173/Python/assets/47415634/32ff27ed-9f5c-4025-b1e3-a853877eefe6)  
+![изображение](https://github.com/drug173/Python/assets/47415634/a9efc8fc-7711-464e-9b27-f287b2ead669)
+
 
