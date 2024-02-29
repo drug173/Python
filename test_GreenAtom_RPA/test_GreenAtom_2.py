@@ -187,7 +187,7 @@ def send_email_with_excel(wb, recipient_email, name_file):
     smtp_server = 'smtp.mail.ru'  # адрес SMTP-сервера
     smtp_port = 587  # порт SMTP-сервера
     sender_email = 'makc.mon@mail.ru'  # адрес отправителя
-    password = 'deRME9Y4BdnWTg92S5A1'  # пароль от почтового ящика отправителя
+    password = '*************************'  # пароль от почтового ящика отправителя
 
     server = smtplib.SMTP(smtp_server, smtp_port)
     server.starttls()
