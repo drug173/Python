@@ -2,8 +2,8 @@
   
 ## Парсинг страницы с сайта  [https://www.moex.com]
 ### Два варианта парсинга:
-#### _test_GreenAtom.py_  с использованием  ___selenium/webdriver___  
-#### _test_GreenAtom.py_  с использованием  ___playwright/bs4___  
+#### __test_GreenAtom.py__  с использованием  __*selenium/webdriver*__  
+#### __test_GreenAtom.py__  с использованием  ___playwright/bs4___  
 
 ##### Парсит данные с таблицы сайта, сохраняет данные в excel файл и отправляет на электронную почту.
 
