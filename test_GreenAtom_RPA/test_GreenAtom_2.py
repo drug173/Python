@@ -1,7 +1,7 @@
 #
 #  Второй способ с selenium
 #  С использованием "CHROMEDRIVER"
-#
+# С выбором дат начала и конца предыдущего месяца
 
 import xlwings as xw
 from decimal import Decimal
@@ -9,22 +9,32 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-
 import os
 import time
-from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
-
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from datetime import datetime, timedelta
+from selenium.webdriver.common.keys import Keys
+import pyperclip
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.options import Options
 
 
 #  Открытие веб страницы
 def opening_web_page(url, driver_1):
+    XPath_calendar_1 = '//*[@id="fromDate"]'
+    XPath_calendar_2 = '//*[@id="tillDate"]'
+    class_name_show_button = "ui-button__label"
+
+    #  Получаем нужные даты
+    date_to_select_start, date_to_select_end = date_previous()
+    # date_to_select_start = "01-01-2024"
+    # date_to_select_end = "15-01-2024"
+
     # Загрузка страницы
     driver_1.get(url)
     time.sleep(2)
@@ -38,6 +48,60 @@ def opening_web_page(url, driver_1):
     except TimeoutException:
         # Если кнопка не найдена в течение 10 секунд, выводим сообщение и продолжаем выполнение без нажатия
         print("Кнопка 'Согласен' не найдена.")
+
+    # Выбор дат в календаре
+    time.sleep(2)
+    #  НАЧАЛО МЕСЯЦА
+    try:
+        # Ждем появления  в течение 10 секунд
+        element = WebDriverWait(driver_1, 10).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="redesign-2021"]/div[3]/div[3]/div/div/div[1]/div/div/div/div/div[4]/p[2]/a')))
+        # Если найдена, нажимаем на неё
+        element.is_selected()
+        element.send_keys(Keys.TAB)  # Отправляем клавишу Tab к элементу
+
+        print("Календарь   найден.")
+    except TimeoutException:
+        # Если  не найдена в течение 10 секунд, выводим сообщение и продолжаем выполнение
+        print("Календарь  не найден.")
+
+    time.sleep(2)
+
+    # Копирование текста в буфер обмена
+    pyperclip.copy(date_to_select_start)
+    # нажатие Ctrl + V, вставка текста из буфера
+    ActionChains(driver_1).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+
+    #  КОНЕЦ МЕСЯЦА
+    try:
+        # Ждем появления в течение 10 секунд
+        element = WebDriverWait(driver_1, 10).until(
+            EC.presence_of_element_located((By.XPATH, '/html/body/div[3]/div[3]/div/div/div[1]/div/div/div/div/div[5]/form/div[2]/span/label/div/div[1]/input')))
+        # Если найдена, нажимаем на неё
+        element.is_selected()
+        element.send_keys(Keys.TAB)  # Отправляем клавишу Tab к элементу
+        print("Календарь  найден.")
+    except TimeoutException:
+        # Если  не найдена в течение 10 секунд, выводим сообщение и продолжаем выполнение
+        print("Календарь  не найден.")
+
+    # Копирование текста в буфер обмена
+    pyperclip.copy(date_to_select_end)
+    # нажатие Ctrl + V, вставка текста из буфера
+    ActionChains(driver_1).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+
+    #  Нажатие кнопки для выбора дат
+    try:
+        # Ждем появления кнопки  в течение 10 секунд
+        accept_button = WebDriverWait(driver_1, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//*[@id='app']/form/div[4]/button/span")))
+        # Если кнопка найдена, нажимаем на неё
+        accept_button.click()
+        print("Кнопка  найдена и нажата.")
+    except TimeoutException:
+        # Если кнопка не найдена в течение 10 секунд, выводим сообщение и продолжаем выполнение без нажатия
+        print("Кнопка  не найдена.")
+
     # Ждем загрузки динамической таблицы
     # Ожидание появления элемента с помощью XPath
     element = WebDriverWait(driver_1, 10).until(
@@ -114,7 +178,7 @@ def column_entry(ws_1):
         # Проверка наличия данных
         if usd_rub_value == "-" or jpy_rub_value == "-":
             # Запись результата в столбец "Результат" (столбец G)
-            ws_1[f'G{row}'] = "-"
+            ws_1[f'G{row}'].value = "-"
         elif usd_rub_value is not None and jpy_rub_value is not None and usd_rub_value != '-' and jpy_rub_value != '-':
             # Расчет результата (USD/RUB divided by JPY/RUB)
             result = float(usd_rub_value) / float(jpy_rub_value)
@@ -187,7 +251,7 @@ def send_email_with_excel(wb, recipient_email, name_file):
     smtp_server = 'smtp.mail.ru'  # адрес SMTP-сервера
     smtp_port = 587  # порт SMTP-сервера
     sender_email = 'makc.mon@mail.ru'  # адрес отправителя
-    password = '*************************'  # пароль от почтового ящика отправителя
+    password = 'deRME9Y4BdnWTg92S5A1'  # пароль от почтового ящика отправителя
 
     server = smtplib.SMTP(smtp_server, smtp_port)
     server.starttls()
@@ -223,6 +287,24 @@ def send_email_with_excel(wb, recipient_email, name_file):
     server.quit()
 
 
+#  Получение дат начала и конца предыдущего месяца
+def date_previous():
+    # 1. Определить текущую дату
+    current_date = datetime.now()
+
+    # 2. Вычислить дату начала предыдущего месяца
+    first_day_of_current_month = current_date.replace(day=1)
+    last_day_of_previous_month = first_day_of_current_month - timedelta(days=1)
+    first_day_of_previous_month = last_day_of_previous_month.replace(day=1)
+
+    # 3. Использовать эти даты для формирования запроса или фильтрации данных
+    start_date = first_day_of_previous_month.strftime('%d.%m.%Y')
+    end_date = last_day_of_previous_month.strftime('%d.%m.%Y')
+    print("Начало предыдущего месяца:", start_date)
+    print("Конец предыдущего месяца:", end_date)
+    return start_date, end_date
+
+
 def main():
     # URL страниц
     page_url = 'https://www.moex.com/ru/derivatives/currency-rate.aspx?currency=USD_RUB'
@@ -234,6 +316,7 @@ def main():
 
     # Запуск браузера
     service = Service(DRIVER_PATH)  # Инициализация драйвера браузера
+    chrome_options = Options()
     driver = webdriver.Chrome(service=service)
 
     wb, ws = create_table()  # создание таблицы и добавление заголовков
