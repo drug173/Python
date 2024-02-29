@@ -100,7 +100,7 @@ def column_entry(ws_1):
         # Проверка наличия данных
         if usd_rub_value == "-" or jpy_rub_value == "-":
             # Запись результата в столбец "Результат" (столбец G)
-            ws_1[f'G{row}'] = "-"
+            ws_1[f'G{row}'].value = "-"
         elif usd_rub_value is not None and jpy_rub_value is not None and usd_rub_value != '-' and jpy_rub_value != '-':
             # Расчет результата (USD/RUB divided by JPY/RUB)
             result = float(usd_rub_value) / float(jpy_rub_value)
