@@ -2,9 +2,9 @@
   
 ## Парсинг страницы с сайта  [moex.com](https://www.moex.com/ru/derivatives/currency-rate.aspx?currency=USD_RUB)
 ### Два варианта парсинга:
-#### __test_GreenAtom_2.py__  с использованием    __*selenium/webdriver*__ 
-#### выбирает даты начала и конца предыдущего месяца  
+#### __test_GreenAtom_2.py__  с использованием    __*selenium/webdriver*__   выбирает даты начала и конца предыдущего месяца  
 
+  
 #### __test_GreenAtom.py__  с использованием    ___playwright/bs4___  
 
 ##### Парсит данные с таблицы сайта, сохраняет данные в excel файл и отправляет на электронную почту.
