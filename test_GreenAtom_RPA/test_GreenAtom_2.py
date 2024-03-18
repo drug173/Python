@@ -55,7 +55,7 @@ def opening_web_page(url, driver_1):
     try:
         # Ждем появления  в течение 10 секунд
         element = WebDriverWait(driver_1, 10).until(
-            EC.presence_of_element_located((By.XPATH, '//*[@id="redesign-2021"]/div[3]/div[3]/div/div/div[1]/div/div/div/div/div[4]/p[2]/a')))
+            EC.presence_of_element_located((By.XPATH, '/html/body/div[3]/div[4]/div/div/div[1]/div/div/div/div/div[4]/p[2]/a')))
         # Если найдена, нажимаем на неё
         element.is_selected()
         element.send_keys(Keys.TAB)  # Отправляем клавишу Tab к элементу
@@ -76,7 +76,7 @@ def opening_web_page(url, driver_1):
     try:
         # Ждем появления в течение 10 секунд
         element = WebDriverWait(driver_1, 10).until(
-            EC.presence_of_element_located((By.XPATH, '/html/body/div[3]/div[3]/div/div/div[1]/div/div/div/div/div[5]/form/div[2]/span/label/div/div[1]/input')))
+            EC.presence_of_element_located((By.XPATH, '/html/body/div[3]/div[4]/div/div/div[1]/div/div/div/div/div[5]/form/div[2]/span/label')))
         # Если найдена, нажимаем на неё
         element.is_selected()
         element.send_keys(Keys.TAB)  # Отправляем клавишу Tab к элементу
