@@ -246,7 +246,9 @@ with sync_playwright() as p:
 
     if flag:  # Если всё нормально отправляем на почту
         #  файл Excel отправляем по электронной почте
+        print("Отправляем почту")
         send_email_with_excel(wb, recipient_email, name_file)
+        print("Почта отправлена")
 
     # Закрываем книгу
     wb.close()
