@@ -6,7 +6,7 @@
 </div>
 
 <div>
-  <img src="https://github.com/drug173/Python/blob/main/Лабораторная%20работа.jpg" width="250" height="150"/>
+  <img src="https://github.com/drug173/Python/blob/main/Лабораторная%20работа.jpg"/>
 </div>
 
 
